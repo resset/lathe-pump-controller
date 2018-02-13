@@ -1,0 +1,6 @@
+Fuce bits for ATmega 8 2 Mhz internal RC oscillator:
+lf=0xe2
+hf=0xd9
+
+Programming:
+avrdude -v -v -p atmega8 -P usb -c usbasp -U flash:w:hex/mega8.hex
