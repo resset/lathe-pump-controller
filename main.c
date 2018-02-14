@@ -38,13 +38,14 @@ int main(void)
         period = period * 3 + 600;
 
         // Duration of ON stat, ADC1
-        ADMUX = _BV(REFS0) | _BV(ADLAR) | _BV(MUX1);
+        ADMUX = _BV(REFS0) | _BV(MUX1);
         ADCSRA |= _BV(ADSC);
         loop_until_bit_is_clear(ADCSRA, ADSC);
-        uint8_t duration = 0;
-        duration = ADCH;
-        // We convert 0 - 255 range to 2 - 10
-        duration = (duration >> 5) + 2;
+        uint16_t duration = 0;
+        duration = ADCL;
+        duration |= ADCH << 8;
+        // We convert 0 - 1023  range to 2 - 10
+        duration = (duration >> 7) + 2;
 
         if (counter > period) {
             cli();
