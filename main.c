@@ -15,7 +15,6 @@ int main(void)
 
     PORTD &= ~(_BV(PD5) | _BV(PD6) | _BV(PD7));
     PORTB &= ~(_BV(PB6) | _BV(PB7) | _BV(PB0));
-    //PORTB |= _BV(PB0);
 
     ADCSRA |= _BV(ADEN);
 
@@ -55,27 +54,12 @@ int main(void)
             PORTD |= _BV(PD7);
             uint8_t i = 0;
             while (i < duration) {
-                _delay_ms(100);
+                _delay_ms(1000);
                 i++;
             }
             PORTD &= ~_BV(PD7);
         }
     }
-
-    /*TCCR1A = 0xa0;
-    TCCR1B = 0x12;
-    ICR1 = 10230;
-    OCR1A = 1000;
-
-    while (1) {
-        ADCSRA |= _BV(ADSC);
-        loop_until_bit_is_clear(ADCSRA, ADSC);
-        uint16_t a = 0;
-        a = ADCL;
-        a |= ADCH << 8;
-
-        OCR1A = a * 10;
-    }*/
 
     return 0;
 }
