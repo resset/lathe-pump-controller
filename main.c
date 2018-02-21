@@ -28,6 +28,12 @@ void gpio_init()
     // Initial low level
     PORTD &= ~(_BV(PIN_D_PUMP_ENABLE) | _BV(PIN_D_LED_3) | _BV(PIN_D_LED_2));
     PORTB &= ~_BV(PIN_B_LED_STATUS);
+
+    // Inputs
+    DDRD &= ~_BV(PIN_D_FORCE_ENABLE);
+
+    // Pull-ups
+    PORTD |= _BV(PIN_D_FORCE_ENABLE);
 }
 
 void uart_init()
@@ -88,33 +94,41 @@ int main(void)
     uint8_t first_run = 1;
 
     while (1) {
-        // Main period, ADC0
-        uint16_t period = adc_read_channel(ADC_CHANNEL_PERIOD);
-        // We convert 0 - 1023 range to 600 - 3669
-        period = period * 3 + 600;
-        //period = 20;
-
-        // Duration of ON stat, ADC1
-        uint16_t duration = adc_read_channel(ADC_CHANNEL_DURATION);
-        // We convert 0 - 1023  range to 2 - 10,
-        // add +10 to eventualy reach 10 as a max
-        duration = ((duration + 10) >> 7) + 2;
-
-        if (first_run == 1 || counter > period) {
-            first_run = 0;
-
-            cli();
-            counter = 0;
-            sei();
-
-            PORTD |= _BV(PIN_D_PUMP_ENABLE);
-
-            uint8_t i = 0;
-            while (i < duration) {
-                _delay_ms(950);
-                i++;
-            }
+        // No force enable
+        if (PIND & (1 << PIN_D_FORCE_ENABLE)) {
+            // Clear output in case we had just exited 'else' condition
             PORTD &= ~_BV(PIN_D_PUMP_ENABLE);
+
+            // Main period, ADC0
+            uint16_t period = adc_read_channel(ADC_CHANNEL_PERIOD);
+            // We convert 0 - 1023 range to 600 - 3669
+            period = period * 3 + 600;
+
+            // Duration of ON stat, ADC1
+            uint16_t duration = adc_read_channel(ADC_CHANNEL_DURATION);
+            // We convert 0 - 1023 range to 2 - 10,
+            // and add 10 to eventualy reach 10 as a max.
+            duration = ((duration + 10) >> 7) + 2;
+
+            if (first_run == 1 || counter > period) {
+                first_run = 0;
+
+                cli();
+                counter = 0;
+                sei();
+
+                PORTD |= _BV(PIN_D_PUMP_ENABLE);
+
+                uint8_t i = 0;
+                while (i < duration) {
+                    _delay_ms(950);
+                    i++;
+                }
+                PORTD &= ~_BV(PIN_D_PUMP_ENABLE);
+            }
+        } else {
+            // Jumper/switch was set to force pump enable, so we do it
+            PORTD |= _BV(PIN_D_PUMP_ENABLE);
         }
     }
 
@@ -123,6 +137,7 @@ int main(void)
 
 ISR(TIMER1_OVF_vect)
 {
+    // Status blink
     PORTB |= _BV(PIN_B_LED_STATUS);
     _delay_ms(50);
     PORTB &= ~_BV(PIN_B_LED_STATUS);
