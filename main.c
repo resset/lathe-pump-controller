@@ -79,7 +79,8 @@ int main(void)
 
         // Duration of ON stat, ADC1
         uint16_t duration = adc_read_channel(1);
-        // We convert 0 - 1023  range to 2 - 10, add +10 to eventualy reach 10 as a max
+        // We convert 0 - 1023  range to 2 - 10,
+        // add +10 to eventualy reach 10 as a max
         duration = ((duration + 10) >> 7) + 2;
 
         //uart_send_byte_nl(duration & 0xff);
@@ -91,7 +92,7 @@ int main(void)
             counter = 0;
             sei();
 
-            PORTD |= _BV(PD7);
+            PORTD |= _BV(PD5);
 
             // uart_send_byte_nl(duration & 0xff);
 
@@ -100,7 +101,7 @@ int main(void)
                 _delay_ms(950);
                 i++;
             }
-            PORTD &= ~_BV(PD7);
+            PORTD &= ~_BV(PD5);
         }
     }
 
