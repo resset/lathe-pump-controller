@@ -6,7 +6,29 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
+#define PIN_D_FORCE_ENABLE  PD2
+#define PIN_D_PUMP_ENABLE   PD5
+#define PIN_B_LED_STATUS    PB0
+#define PIN_D_LED_2         PD7
+#define PIN_D_LED_3         PD6
+#define PIN_B_STEPPER_PULSE PB3
+
+#define ADC_CHANNEL_PERIOD   0
+#define ADC_CHANNEL_DURATION 1
+#define ADC_CHANNEL_STEPPER  2
+
 volatile uint16_t counter = 0;
+
+void gpio_init()
+{
+    // Outputs
+    DDRD |= _BV(PIN_D_PUMP_ENABLE) | _BV(PIN_D_LED_3) | _BV(PIN_D_LED_2);
+    DDRB |= _BV(PIN_B_LED_STATUS);
+
+    // Initial low level
+    PORTD &= ~(_BV(PIN_D_PUMP_ENABLE) | _BV(PIN_D_LED_3) | _BV(PIN_D_LED_2));
+    PORTB &= ~_BV(PIN_B_LED_STATUS);
+}
 
 void uart_init()
 {
@@ -49,11 +71,9 @@ uint16_t adc_read_channel(uint8_t channel)
 
 int main(void)
 {
-    DDRD |= _BV(PD5) | _BV(PD6) | _BV(PD7);
-    DDRB |= _BV(PB6) | _BV(PB7) | _BV(PB0);
+    gpio_init();
 
-    PORTD &= ~(_BV(PD5) | _BV(PD6) | _BV(PD7));
-    PORTB &= ~(_BV(PB6) | _BV(PB7) | _BV(PB0));
+    uart_init();
 
     adc_init();
 
@@ -63,27 +83,22 @@ int main(void)
 
     TIMSK = _BV(TOIE1);
 
-    uart_init();
-
     sei();
 
     uint8_t first_run = 1;
 
     while (1) {
         // Main period, ADC0
-        uint16_t period = adc_read_channel(0);
+        uint16_t period = adc_read_channel(ADC_CHANNEL_PERIOD);
         // We convert 0 - 1023 range to 600 - 3669
         period = period * 3 + 600;
-        //uart_send_byte_nl(period & 0xff);
         //period = 20;
 
         // Duration of ON stat, ADC1
-        uint16_t duration = adc_read_channel(1);
+        uint16_t duration = adc_read_channel(ADC_CHANNEL_DURATION);
         // We convert 0 - 1023  range to 2 - 10,
         // add +10 to eventualy reach 10 as a max
         duration = ((duration + 10) >> 7) + 2;
-
-        //uart_send_byte_nl(duration & 0xff);
 
         if (first_run == 1 || counter > period) {
             first_run = 0;
@@ -92,16 +107,14 @@ int main(void)
             counter = 0;
             sei();
 
-            PORTD |= _BV(PD5);
-
-            // uart_send_byte_nl(duration & 0xff);
+            PORTD |= _BV(PIN_D_PUMP_ENABLE);
 
             uint8_t i = 0;
             while (i < duration) {
                 _delay_ms(950);
                 i++;
             }
-            PORTD &= ~_BV(PD5);
+            PORTD &= ~_BV(PIN_D_PUMP_ENABLE);
         }
     }
 
@@ -110,9 +123,9 @@ int main(void)
 
 ISR(TIMER1_OVF_vect)
 {
-    PORTB |= _BV(PB0);
+    PORTB |= _BV(PIN_B_LED_STATUS);
     _delay_ms(50);
-    PORTB &= ~_BV(PB0);
+    PORTB &= ~_BV(PIN_B_LED_STATUS);
 
     counter++;
 }
