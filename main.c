@@ -26,6 +26,27 @@ void uart_send_byte_nl(uint8_t byte)
         UDR = '\n';
 }
 
+void adc_init()
+{
+    ADCSRA |= _BV(ADEN);
+}
+
+uint16_t adc_read_channel(uint8_t channel)
+{
+    // Setup channel
+    ADMUX = (1 << REFS0) | channel;
+
+    // Start conversion
+    ADCSRA |= _BV(ADSC);
+    loop_until_bit_is_clear(ADCSRA, ADSC);
+
+    uint16_t value = 0;
+    value = ADCL;
+    value |= ADCH << 8;
+
+    return value;
+}
+
 int main(void)
 {
     DDRD |= _BV(PD5) | _BV(PD6) | _BV(PD7);
@@ -34,7 +55,7 @@ int main(void)
     PORTD &= ~(_BV(PD5) | _BV(PD6) | _BV(PD7));
     PORTB &= ~(_BV(PB6) | _BV(PB7) | _BV(PB0));
 
-    ADCSRA |= _BV(ADEN);
+    adc_init();
 
     TCCR1A = 0x03;
     TCCR1B = 0x1b;
@@ -50,24 +71,14 @@ int main(void)
 
     while (1) {
         // Main period, ADC0
-        ADMUX = _BV(REFS0);
-        ADCSRA |= _BV(ADSC);
-        loop_until_bit_is_clear(ADCSRA, ADSC);
-        uint16_t period = 0;
-        period = ADCL;
-        period |= ADCH << 8;
+        uint16_t period = adc_read_channel(0);
         // We convert 0 - 1023 range to 600 - 3669
         period = period * 3 + 600;
         //uart_send_byte_nl(period & 0xff);
         //period = 20;
 
         // Duration of ON stat, ADC1
-        ADMUX = _BV(REFS0) | _BV(MUX1);
-        ADCSRA |= _BV(ADSC);
-        loop_until_bit_is_clear(ADCSRA, ADSC);
-        uint16_t duration = 0;
-        duration = ADCL;
-        duration |= ADCH << 8;
+        uint16_t duration = adc_read_channel(1);
         // We convert 0 - 1023  range to 2 - 10, add +10 to eventualy reach 10 as a max
         duration = ((duration + 10) >> 7) + 2;
 
