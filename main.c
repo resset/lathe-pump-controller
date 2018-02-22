@@ -36,24 +36,6 @@ void gpio_init()
     PORTD |= _BV(PIN_D_FORCE_ENABLE);
 }
 
-void uart_init()
-{
-    #define BAUD 9600                                   // define baud
-    #define BAUDRATE ((F_CPU)/(BAUD*16UL)-1)            // set baud rate value for UBRR
-    UBRRH = (BAUDRATE>>8);                      // shift the register right by 8 bits
-    UBRRL = BAUDRATE;                           // set baud rate
-    UCSRB|= (1<<TXEN)|(1<<RXEN);                // enable receiver and transmitter
-    UCSRC|= (1<<URSEL)|(1<<UCSZ0)|(1<<UCSZ1);   // 8bit data format
-}
-
-void uart_send_byte_nl(uint8_t byte)
-{
-        while (!(UCSRA & (1 << UDRE)));
-        UDR = byte;
-        while (!(UCSRA & (1 << UDRE)));
-        UDR = '\n';
-}
-
 void adc_init()
 {
     ADCSRA |= _BV(ADEN);
@@ -78,8 +60,6 @@ uint16_t adc_read_channel(uint8_t channel)
 int main(void)
 {
     gpio_init();
-
-    uart_init();
 
     adc_init();
 
