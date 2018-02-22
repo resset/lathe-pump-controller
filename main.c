@@ -23,7 +23,7 @@ void gpio_init()
 {
     // Outputs
     DDRD |= _BV(PIN_D_PUMP_ENABLE) | _BV(PIN_D_LED_3) | _BV(PIN_D_LED_2);
-    DDRB |= _BV(PIN_B_LED_STATUS);
+    DDRB |= _BV(PIN_B_LED_STATUS) | _BV(PIN_B_STEPPER_PULSE);
 
     // Initial low level
     PORTD &= ~(_BV(PIN_D_PUMP_ENABLE) | _BV(PIN_D_LED_3) | _BV(PIN_D_LED_2));
@@ -83,11 +83,22 @@ int main(void)
 
     adc_init();
 
+    // Main on-second counter
     TCCR1A = 0x03;
     TCCR1B = 0x1b;
     OCR1A = 31250;
-
+    // Enable interrupt
     TIMSK = _BV(TOIE1);
+
+    // Stepper motor step counter
+    // CTC mode
+    TCCR2 |= (1 << WGM21);
+    // Toggle OC2 on compare match
+    TCCR2 |= (1 << COM20);
+    // clk/32
+    TCCR2 |= (1 << CS21) | (1 << CS20);
+    // Initial frequency: 244 Hz
+    OCR2 = 127;
 
     sei();
 
@@ -109,6 +120,10 @@ int main(void)
             // We convert 0 - 1023 range to 2 - 10,
             // and add 10 to eventualy reach 10 as a max.
             duration = ((duration + 10) >> 7) + 2;
+
+            // Stepper motor step frequency, ADC2
+            uint16_t step_freq = adc_read_channel(ADC_CHANNEL_STEPPER);
+            OCR2 = (step_freq >> 2) & 0xff;
 
             if (first_run == 1 || counter > period) {
                 first_run = 0;
