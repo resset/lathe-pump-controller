@@ -75,10 +75,8 @@ int main(void)
     TCCR2 |= (1 << WGM21);
     // Toggle OC2 on compare match
     TCCR2 |= (1 << COM20);
-    // clk/32
-    TCCR2 |= (1 << CS21) | (1 << CS20);
-    // Initial frequency: 244 Hz
-    OCR2 = 127;
+    // Initial frequency: 512 Hz
+    OCR2 = 60;
 
     sei();
 
@@ -102,8 +100,16 @@ int main(void)
             duration = ((duration + 10) >> 7) + 2;
 
             // Stepper motor step frequency, ADC2
-            uint16_t step_freq = adc_read_channel(ADC_CHANNEL_STEPPER);
-            OCR2 = (step_freq >> 2) & 0xff;
+            uint8_t step_freq = (adc_read_channel(ADC_CHANNEL_STEPPER) >> 2) & 0xff;
+            step_freq = 255 - step_freq;
+            // This way we get 122 - 1008 Hz range
+            if (step_freq < 226) {
+                OCR2 = step_freq + 30;
+            } else {
+                OCR2 = 0xff;
+            }
+            // Enable counter only when OCR2 is known, we use clk/32
+            TCCR2 |= (1 << CS21) | (1 << CS20);
 
             if (first_run == 1 || counter > period) {
                 first_run = 0;
