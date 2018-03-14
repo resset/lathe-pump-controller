@@ -8,9 +8,9 @@
 
 #define PIN_D_FORCE_ENABLE  PD2
 #define PIN_D_PUMP_ENABLE   PD5
-#define PIN_B_LED_STATUS    PB0
+#define PIN_B_LED_1         PB0
 #define PIN_D_LED_2         PD7
-#define PIN_D_LED_3         PD6
+#define PIN_D_LED_STATUS    PD6
 #define PIN_B_STEPPER_PULSE PB3
 
 #define ADC_CHANNEL_PERIOD   0
@@ -22,12 +22,12 @@ volatile uint16_t counter = 0;
 void gpio_init()
 {
     // Outputs
-    DDRD |= _BV(PIN_D_PUMP_ENABLE) | _BV(PIN_D_LED_3) | _BV(PIN_D_LED_2);
-    DDRB |= _BV(PIN_B_LED_STATUS) | _BV(PIN_B_STEPPER_PULSE);
+    DDRD |= _BV(PIN_D_PUMP_ENABLE) | _BV(PIN_D_LED_STATUS) | _BV(PIN_D_LED_2);
+    DDRB |= _BV(PIN_B_LED_1) | _BV(PIN_B_STEPPER_PULSE);
 
     // Initial low level
-    PORTD &= ~(_BV(PIN_D_PUMP_ENABLE) | _BV(PIN_D_LED_3) | _BV(PIN_D_LED_2));
-    PORTB &= ~_BV(PIN_B_LED_STATUS);
+    PORTD &= ~(_BV(PIN_D_PUMP_ENABLE) | _BV(PIN_D_LED_STATUS) | _BV(PIN_D_LED_2));
+    PORTB &= ~_BV(PIN_B_LED_1);
 
     // Inputs
     DDRD &= ~_BV(PIN_D_FORCE_ENABLE);
@@ -139,9 +139,9 @@ int main(void)
 ISR(TIMER1_OVF_vect)
 {
     // Status blink
-    PORTB |= _BV(PIN_B_LED_STATUS);
+    PORTD |= _BV(PIN_D_LED_STATUS);
     _delay_ms(50);
-    PORTB &= ~_BV(PIN_B_LED_STATUS);
+    PORTD &= ~_BV(PIN_D_LED_STATUS);
 
     counter++;
 }
