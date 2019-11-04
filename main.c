@@ -17,7 +17,7 @@
 
 volatile uint16_t counter = 0;
 
-void gpio_init()
+void gpio_init(void)
 {
     // Outputs
     DDRD |= _BV(PIN_D_PUMP_ENABLE) | _BV(PIN_D_LED_STATUS);
@@ -33,7 +33,7 @@ void gpio_init()
     PORTD |= _BV(PIN_D_FORCE_ENABLE);
 }
 
-void adc_init()
+void adc_init(void)
 {
     ADCSRA |= _BV(ADEN);
 }
